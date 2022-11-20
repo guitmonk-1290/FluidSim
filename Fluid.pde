@@ -41,27 +41,27 @@ class Fluid {
     
     void step() {
       float visc     = this.visc;
-    float diff     = this.diff;
-    float dt       = this.dt;
-    float[] Vx      = this.Vx;
-    float[] Vy      = this.Vy;
-    float[] Vx0     = this.Vx0;
-    float[] Vy0     = this.Vy0;
-    float[] s       = this.s;
-    float[] density = this.density;
-    
-    diffuse(1, Vx0, Vx, visc, dt);
-    diffuse(2, Vy0, Vy, visc, dt);
-    
-    project(Vx0, Vy0, Vx, Vy);
-    
-    advect(1, Vx, Vx0, Vx0, Vy0, dt);
-    advect(2, Vy, Vy0, Vx0, Vy0, dt);  
-    
-    project(Vx, Vy, Vx0, Vy0);
-    
-    diffuse(0, s, density, diff, dt);
-    advect(0, density, s, Vx, Vy, dt);
+      float diff     = this.diff;
+      float dt       = this.dt;
+      float[] Vx      = this.Vx;
+      float[] Vy      = this.Vy;
+      float[] Vx0     = this.Vx0;
+      float[] Vy0     = this.Vy0;
+      float[] s       = this.s;
+      float[] density = this.density;
+
+      diffuse(1, Vx0, Vx, visc, dt);
+      diffuse(2, Vy0, Vy, visc, dt);
+
+      project(Vx0, Vy0, Vx, Vy);
+
+      advect(1, Vx, Vx0, Vx0, Vy0, dt);
+      advect(2, Vy, Vy0, Vx0, Vy0, dt);  
+
+      project(Vx, Vy, Vx0, Vy0);
+
+      diffuse(0, s, density, diff, dt);
+      advect(0, density, s, Vx, Vy, dt);
     }
     
     void addDensity(int x, int y, float amount) {
@@ -73,6 +73,25 @@ class Fluid {
      int index = IX(x, y);
      this.Vx[index] += amountX;
      this.Vy[index] += amountY;
+    }
+    
+    float curl(int x, int y) {
+     return Vx[IX(x, y+1)]-Vx[IX(x, y-1)]+Vy[IX(x-1, y)]-Vy[IX(x+1, y)]; 
+    }
+    
+    void vorticityConfinement(float dt, float vorticity) {
+     float dx, dy, len;
+     for(int x = 2; x < N - 3; x++) {
+      for(int y = 2; y < N - 3; y++) {
+        dx = abs(curl(x+0, y-1)) - abs(curl(x+0, y+1));
+        dy = abs(curl(x+1, y+0)) - abs(curl(x-1, y+0));
+        len = sqrt(sq(dx) + sq(dy)) + 1e-5;
+        dx = vorticity/len*dx;
+        dy = vorticity/len*dy;
+        Vx[IX(x, y)] += curl(x, y)*dx;
+        Vy[IX(x, y)] += curl(x, y)*dy;
+      }
+     }
     }
     
     void renderD() {
